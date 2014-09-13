@@ -221,7 +221,7 @@ AutoPager.prototype.request = function() {
         })
     }
     else {
-        loadWithIframe(this.requestURL, function(doc, url) {
+        loadWithXHR(this.requestURL, function(doc, url) {
             self.load(doc, url)
         }, function(err) {
             self.error()
@@ -689,34 +689,15 @@ function isExclude(patterns) {
     return false
 }
 
-function loadWithIframe(url, callback, errback) {
-    var iframe = document.createElement('iframe')
-    iframe.sandbox = 'allow-same-origin'
-    iframe.style.display = 'none'
-    iframe.src = url
-    document.body.appendChild(iframe)
-    var contentload = function() {
-        try {
-            if (!iframe.contentDocument) {
-                errback()
-            }
-            else {
-                var loadedURL = iframe.contentWindow ? iframe.contentWindow.location.href : null
-                var doc = iframe.contentDocument
-                var ss =  doc.querySelectorAll('script')
-                for (var i = 0; i < ss.length; i++) {
-                    ss[i].parentNode.removeChild(ss[i])
-                }
-                callback(iframe.contentDocument, loadedURL)
-            }
-            iframe.parentNode.removeChild(iframe)
-        }
-        catch(e) {
-            errback()
-        }
-    }
-    iframe.onload = contentload
-    iframe.onerror = errback
+function loadWithXHR(url, callback, errback) {
+    var req = new XMLHttpRequest()
+    req.open('GET', url)
+    req.responseType = 'document'
+    req.addEventListener('load', function (event) {
+        callback(event.target.response, event.target.responseURL)
+    })
+    req.addEventListener('error', errback)
+    req.send()
 }
 
 function createHTMLDocumentByString(str) {
